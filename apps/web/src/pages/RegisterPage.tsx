@@ -30,6 +30,7 @@ export function RegisterPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [fullName, setFullName] = useState('')
+  const [studentId, setStudentId] = useState('')
   const [primaryDepartmentId, setPrimaryDepartmentId] = useState<string>('')
   const [err, setErr] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
@@ -68,6 +69,9 @@ export function RegisterPage() {
         password,
         fullName,
       }
+      if (studentId.trim()) {
+        body.studentId = studentId.trim()
+      }
       if (primaryDepartmentId) {
         body.primaryDepartmentId = Number(primaryDepartmentId)
       }
@@ -99,6 +103,16 @@ export function RegisterPage() {
                 onChange={(e) => setFullName(e.target.value)}
                 required
                 minLength={1}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="mssv">MSSV (tùy chọn)</Label>
+              <Input
+                id="mssv"
+                value={studentId}
+                onChange={(e) => setStudentId(e.target.value)}
+                maxLength={32}
+                autoComplete="off"
               />
             </div>
             <div className="space-y-1.5">
