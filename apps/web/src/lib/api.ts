@@ -1,8 +1,19 @@
-const API = '/api'
+/**
+ * Deploy (Render, v.v.): web và API khác subdomain — đặt
+ * `VITE_API_ORIGIN=https://ten-api.onrender.com` (không dấu / cuối).
+ * Không đặt hoặc rỗng: dùng `/api` cùng origin (dev có proxy).
+ */
+function apiOriginBase(): string {
+  const raw = String(import.meta.env.VITE_API_ORIGIN ?? '').trim()
+  const base = raw.replace(/\/$/, '')
+  return base === '' ? '' : `${base}`
+}
 
 export function apiPath(path: string) {
   const p = path.startsWith('/') ? path : `/${path}`
-  return `${API}${p}`
+  const origin = apiOriginBase()
+  const prefix = origin === '' ? '/api' : `${origin}/api`
+  return `${prefix}${p}`
 }
 
 export async function api(

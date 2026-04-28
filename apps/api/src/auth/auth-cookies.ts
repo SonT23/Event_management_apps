@@ -6,6 +6,7 @@ type CookieOptions = {
   accessMaxAgeSec: number;
   refreshMaxAgeSec: number;
   secure: boolean;
+  sameSite: 'lax' | 'strict' | 'none';
 };
 
 function parseDurationToSec(v: string, fallback: number): number {
@@ -28,10 +29,21 @@ export function getCookieConfig(config: ConfigService): CookieOptions {
   const accessMaxAgeSec = parseDurationToSec(accessStr, 900);
   const refreshDays =
     parseInt(config.get<string>('REFRESH_DAYS') ?? '7', 10) || 7;
+  const secure = config.get<string>('COOKIE_SECURE') === 'true';
+  /** Web/API khác subdomain (vd. Render): `none` + COOKIE_SECURE=true */
+  const sameSiteRaw = (config.get<string>('COOKIE_SAMESITE') ?? 'lax').toLowerCase();
+  let sameSite: 'lax' | 'strict' | 'none' = 'lax';
+  if (sameSiteRaw === 'strict') sameSite = 'strict';
+  if (sameSiteRaw === 'none') sameSite = 'none';
+
   return {
     accessMaxAgeSec,
     refreshMaxAgeSec: refreshDays * 86400,
-    secure: config.get<string>('COOKIE_SECURE') === 'true',
+    secure,
+    sameSite:
+      sameSite === 'none' && !secure
+        ? ('lax' as const)
+        : sameSite,
   };
 }
 
@@ -49,14 +61,14 @@ export function setAuthCookies(
   res.cookie(names.access, accessToken, {
     httpOnly: true,
     secure: opt.secure,
-    sameSite: 'lax',
+    sameSite: opt.sameSite,
     path: '/',
     maxAge: opt.accessMaxAgeSec * 1000,
   });
   res.cookie(names.refresh, refreshToken, {
     httpOnly: true,
     secure: opt.secure,
-    sameSite: 'lax',
+    sameSite: opt.sameSite,
     path: '/',
     maxAge: opt.refreshMaxAgeSec * 1000,
   });
@@ -67,13 +79,13 @@ export function clearAuthCookies(res: Response, config: ConfigService): void {
     access: config.get<string>('AUTH_ACCESS_COOKIE') ?? AUTH_ACCESS_COOKIE,
     refresh: config.get<string>('AUTH_REFRESH_COOKIE') ?? AUTH_REFRESH_COOKIE,
   };
-  const secure = config.get<string>('COOKIE_SECURE') === 'true';
+  const opt = getCookieConfig(config);
   for (const name of [names.access, names.refresh]) {
     res.clearCookie(name, {
       path: '/',
       httpOnly: true,
-      secure,
-      sameSite: 'lax',
+      secure: opt.secure,
+      sameSite: opt.sameSite,
     });
   }
 }
