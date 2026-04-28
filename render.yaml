@@ -1,7 +1,9 @@
-# Render Blueprint (tùy chọn): Dashboard → New → Blueprint → nối repo
-# Hoặc chỉnh tay Web Service giống các lệnh dưới.
+# Render Blueprint: Dashboard → New → Blueprint → nối repo (hoặc chỉnh tay từng service).
 #
-# Bổ sung JWT_SECRET, DATABASE_URL, CORS_ORIGIN, COOKIE_* trong Render → Environment.
+# API: bổ sung JWT_SECRET, DATABASE_URL, CORS_ORIGIN (phải gồm URL static site, vd
+# https://media-club-web.onrender.com), COOKIE_* trong Environment.
+# Static site: VITE_API_ORIGIN = URL public của API (vd https://media-club-api.onrender.com),
+# không có dấu / cuối — build Vite embed giá trị này.
 
 services:
   - type: web
@@ -15,3 +17,23 @@ services:
     envVars:
       - key: NODE_VERSION
         value: "22"
+
+  # SPA (Vite + React Router): rewrite mọi path → index.html để /app/reports không 404.
+  - type: web
+    name: media-club-web
+    runtime: static
+    region: singapore
+    plan: free
+    rootDir: .
+    buildCommand: npm install && npm run build:web
+    staticPublishPath: apps/web/dist
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      # Trùng tên service API ở trên → URL đúng dạng https://media-club-api.onrender.com
+      - key: VITE_API_ORIGIN
+        value: https://media-club-api.onrender.com

@@ -4,10 +4,26 @@ import {
   Injectable,
 } from '@nestjs/common';
 import {
+  Prisma,
   event_registrations_status,
   members_membership_status,
 } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+
+/** DB cũ chưa có bảng `club_meetings` → P2021 — tránh vỡ trang báo cáo. */
+async function clubMeetingsCountOrZero(prisma: PrismaService): Promise<number> {
+  try {
+    return await prisma.club_meetings.count();
+  } catch (e) {
+    if (
+      e instanceof Prisma.PrismaClientKnownRequestError &&
+      e.code === 'P2021'
+    ) {
+      return 0;
+    }
+    throw e;
+  }
+}
 import { isClubLeadership } from '../auth/utils/has-role';
 import { RequestUserPayload } from '../auth/types/request-user-payload';
 
@@ -206,7 +222,7 @@ export class OrganizationService {
         _count: { _all: true },
       }),
       this.prisma.event_meetings.count(),
-      this.prisma.club_meetings.count(),
+      clubMeetingsCountOrZero(this.prisma),
       this.prisma.event_checkins.count(),
       this.prisma.events.count({
         where: {
