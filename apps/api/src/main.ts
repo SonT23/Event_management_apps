@@ -36,9 +36,11 @@ async function bootstrap() {
   );
   app.useGlobalFilters(new PrismaExceptionFilter(), new AllExceptionsFilter());
   app.enableShutdownHooks();
-  const port = process.env.PORT ?? 3000;
-  await app.listen(port);
+  // PORT rỗng / sai → '' | NaN; `??` không thay chuỗi rỗng → gây ERR_SOCKET_BAD_PORT trên PaaS (Render)
+  const port = Number.parseInt(String(process.env.PORT || '3000'), 10);
+  const listenPort = Number.isFinite(port) && port > 0 ? port : 3000;
+  await app.listen(listenPort);
   // eslint-disable-next-line no-console
-  console.log(`API http://127.0.0.1:${port}/api`);
+  console.log(`API http://127.0.0.1:${listenPort}/api`);
 }
 bootstrap();
