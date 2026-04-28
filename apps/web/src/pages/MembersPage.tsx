@@ -48,6 +48,7 @@ type Row = {
   userId: string
   fullName: string
   email?: string
+  studentId?: string | null
   primaryDepartment: { name: string; code: string } | null
   primaryDepartmentId?: string | null
   membershipStatus: string
@@ -103,6 +104,7 @@ export function MembersPage() {
   const [cDept, setCDept] = useState<string>('')
   const [cGender, setCGender] = useState('unspecified')
   const [cBirth, setCBirth] = useState('')
+  const [cStudentId, setCStudentId] = useState('')
 
   const [editOpen, setEditOpen] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
@@ -116,6 +118,7 @@ export function MembersPage() {
   const [eDept, setEDept] = useState<string>('')
   const [eGender, setEGender] = useState('unspecified')
   const [eBirth, setEBirth] = useState('')
+  const [eStudentId, setEStudentId] = useState('')
 
   const [memOpen, setMemOpen] = useState(false)
   const [memId, setMemId] = useState<string | null>(null)
@@ -195,6 +198,7 @@ export function MembersPage() {
     setCDept('')
     setCGender('unspecified')
     setCBirth('')
+    setCStudentId('')
     setCreateMsg(null)
   }
 
@@ -214,6 +218,7 @@ export function MembersPage() {
       setEDept(d.primaryDepartmentId ? String(d.primaryDepartmentId) : '')
       setEGender((d.gender as string) || 'unspecified')
       setEBirth(dateForInput(d.birthDate))
+      setEStudentId(d.studentId?.trim() ?? '')
     } catch (e) {
       setEErr(formatApiError(e))
     } finally {
@@ -247,6 +252,9 @@ export function MembersPage() {
       }
       if (cBirth) {
         body.birthDate = cBirth
+      }
+      if (cStudentId.trim()) {
+        body.studentId = cStudentId.trim()
       }
       const out = await apiJson<{
         temporaryPassword?: string
@@ -288,6 +296,7 @@ export function MembersPage() {
         positionTitle: ePosition.trim() || null,
         primaryDepartmentId: eDept ? Number(eDept) : null,
         birthDate: eBirth || null,
+        studentId: eStudentId.trim() || null,
       }
       await apiJson(`/members/${editingId}`, {
         method: 'PATCH',
@@ -422,6 +431,7 @@ export function MembersPage() {
             <TableHeader>
               <TableRow>
                 <TableHead>Họ tên</TableHead>
+                <TableHead>MSSV</TableHead>
                 <TableHead>Email</TableHead>
                 <TableHead>Ban</TableHead>
                 <TableHead>Trạng thái</TableHead>
@@ -438,6 +448,9 @@ export function MembersPage() {
                     >
                       {m.fullName}
                     </Link>
+                  </TableCell>
+                  <TableCell className="text-muted-foreground text-xs">
+                    {m.studentId?.trim() || '—'}
                   </TableCell>
                   <TableCell className="text-muted-foreground text-xs">
                     {m.email ?? '—'}
@@ -550,6 +563,17 @@ export function MembersPage() {
                   value={cFullName}
                   onChange={(e) => setCFullName(e.target.value)}
                   required
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="c-mssv">MSSV (tùy chọn)</Label>
+                <Input
+                  id="c-mssv"
+                  value={cStudentId}
+                  onChange={(e) => setCStudentId(e.target.value)}
+                  maxLength={32}
+                  autoComplete="off"
+                  inputMode="numeric"
                 />
               </div>
               <div className="space-y-1.5">
@@ -673,6 +697,17 @@ export function MembersPage() {
                     value={eFullName}
                     onChange={(e) => setEFullName(e.target.value)}
                     required
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="e-mssv">MSSV</Label>
+                  <Input
+                    id="e-mssv"
+                    value={eStudentId}
+                    onChange={(e) => setEStudentId(e.target.value)}
+                    maxLength={32}
+                    autoComplete="off"
+                    inputMode="numeric"
                   />
                 </div>
                 <div className="space-y-1.5">

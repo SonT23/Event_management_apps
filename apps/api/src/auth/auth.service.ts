@@ -85,6 +85,7 @@ export class AuthService {
     return {
       userId: m.user_id.toString(),
       fullName: m.full_name,
+      studentId: m.student_id,
       gender: m.gender,
       birthDate: m.birth_date,
       major: m.major,
@@ -277,6 +278,15 @@ export class AuthService {
     if (existing) {
       throw new ConflictException('Email already registered');
     }
+    const sid = dto.studentId?.trim();
+    if (sid) {
+      const takenSid = await this.prisma.members.findFirst({
+        where: { student_id: sid },
+      });
+      if (takenSid) {
+        throw new ConflictException('MSSV đã được đăng ký');
+      }
+    }
     const memberRole = await this.prisma.roles.findFirst({
       where: { code: 'MEMBER' },
     });
@@ -304,6 +314,9 @@ export class AuthService {
         data: {
           user_id: u.id,
           full_name: dto.fullName,
+          student_id: dto.studentId?.trim()
+            ? dto.studentId.trim()
+            : null,
           gender: dto.gender ?? 'unspecified',
           birth_date: dto.birthDate ? new Date(dto.birthDate) : null,
           major: dto.major ?? null,

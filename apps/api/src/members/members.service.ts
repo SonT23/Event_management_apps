@@ -29,6 +29,7 @@ export class MembersService {
     return {
       userId: m.user_id.toString(),
       fullName: m.full_name,
+      studentId: m.student_id,
       gender: m.gender,
       birthDate: m.birth_date,
       major: m.major,
@@ -81,6 +82,10 @@ export class MembersService {
     if (dto.positionTitle !== undefined) {
       data.position_title = dto.positionTitle;
     }
+    if (dto.studentId !== undefined) {
+      const t = dto.studentId?.trim();
+      data.student_id = t === '' || t == null ? null : t;
+    }
     if (dto.primaryDepartmentId !== undefined) {
       data.departments = dto.primaryDepartmentId
         ? { connect: { id: dto.primaryDepartmentId } }
@@ -99,8 +104,30 @@ export class MembersService {
     }
   }
 
+  /** MSSV độc nhất trong bảng members (nullable bỏ qua). */
+  private async assertStudentIdAvailable(
+    raw: string | null | undefined,
+    exceptUserId?: bigint,
+  ): Promise<void> {
+    const t = raw?.trim();
+    if (!t) return;
+    const existing = await this.prisma.members.findFirst({
+      where: {
+        student_id: t,
+        ...(exceptUserId != null
+          ? { NOT: { user_id: exceptUserId } }
+          : {}),
+      },
+      select: { user_id: true },
+    });
+    if (existing) {
+      throw new ConflictException('MSSV đã được gán cho hội viên khác');
+    }
+  }
+
   async updateOwnProfile(current: RequestUserPayload, dto: UpdateProfileDto) {
     await this.assertDepartmentExists(dto.primaryDepartmentId);
+    await this.assertStudentIdAvailable(dto.studentId, current.id);
     const data = this.buildMemberUpdateData(dto);
     if (Object.keys(data).length === 0) {
       const m = await this.prisma.members.findUniqueOrThrow({
@@ -153,6 +180,7 @@ export class MembersService {
     if (deptId != null) {
       await this.assertDepartmentExists(deptId);
     }
+    await this.assertStudentIdAvailable(dto.studentId);
     const plain = dto.password?.trim() ? dto.password : this.tempPassword();
     const wasGenerated = !dto.password?.trim();
     const passHash = await this.auth.hashPassword(plain);
@@ -167,6 +195,9 @@ export class MembersService {
         data: {
           user_id: u.id,
           full_name: dto.fullName,
+          student_id: dto.studentId?.trim()
+            ? dto.studentId.trim()
+            : null,
           gender: dto.gender ?? 'unspecified',
           birth_date: dto.birthDate ? new Date(dto.birthDate) : null,
           major: dto.major ?? null,
@@ -204,6 +235,7 @@ export class MembersService {
     }
     const id = toBigId(targetUserId, 'userId');
     await this.assertDepartmentExists(dto.primaryDepartmentId);
+    await this.assertStudentIdAvailable(dto.studentId, id);
     const m0 = await this.prisma.members.findUnique({ where: { user_id: id } });
     if (!m0) {
       throw new NotFoundException();

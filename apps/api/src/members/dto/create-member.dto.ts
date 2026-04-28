@@ -6,6 +6,7 @@ import {
   IsInt,
   IsOptional,
   IsString,
+  MaxLength,
   MinLength,
   ValidateIf,
 } from 'class-validator';
@@ -17,6 +18,11 @@ export class CreateMemberDto {
   @IsString()
   @MinLength(1)
   fullName!: string;
+
+  @IsString()
+  @IsOptional()
+  @MaxLength(32)
+  studentId?: string;
 
   @IsOptional()
   @Transform(({ value }) => {

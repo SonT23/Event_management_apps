@@ -225,6 +225,8 @@ model member_warnings {
 model members {
   user_id               BigInt                    @id @db.UnsignedBigInt
   full_name             String                    @db.VarChar(160)
+  /// MSSV (mã số sinh viên), duy nhất khi có giá trị
+  student_id            String?                   @unique @db.VarChar(32)
   gender                members_gender            @default(unspecified)
   birth_date            DateTime?                 @db.Date
   major                 String?                   @db.VarChar(180)

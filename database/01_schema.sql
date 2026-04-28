@@ -57,6 +57,7 @@ CREATE TABLE `users` (
 CREATE TABLE `members` (
   `user_id`       BIGINT UNSIGNED NOT NULL,
   `full_name`     VARCHAR(160) NOT NULL,
+  `student_id`    VARCHAR(32) NULL COMMENT 'MSSV',
   `gender`        ENUM('male','female','other','unspecified') NOT NULL DEFAULT 'unspecified',
   `birth_date`    DATE NULL,
   `major`         VARCHAR(180) NULL COMMENT 'Ngành học',
@@ -66,6 +67,7 @@ CREATE TABLE `members` (
   `created_at`    TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at`    TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`user_id`),
+  UNIQUE KEY `ux_members_student_id` (`student_id`),
   KEY `ix_members_dept` (`primary_department_id`),
   KEY `ix_members_name` (`full_name`),
   CONSTRAINT `fk_members_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,

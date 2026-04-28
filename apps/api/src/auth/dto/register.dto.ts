@@ -6,6 +6,7 @@ import {
   IsInt,
   IsOptional,
   IsString,
+  MaxLength,
   MinLength,
 } from 'class-validator';
 
@@ -20,6 +21,11 @@ export class RegisterDto {
   @IsString()
   @MinLength(1)
   fullName: string;
+
+  @IsString()
+  @IsOptional()
+  @MaxLength(32)
+  studentId?: string;
 
   @IsIn(['male', 'female', 'other', 'unspecified'])
   @IsOptional()

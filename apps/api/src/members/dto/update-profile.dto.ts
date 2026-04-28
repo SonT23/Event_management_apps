@@ -15,6 +15,12 @@ export class UpdateProfileDto {
   @MaxLength(160)
   fullName?: string;
 
+  @IsString()
+  @IsOptional()
+  @MaxLength(32)
+  /** MSSV — gửi "" hoặc null để xóa */
+  studentId?: string | null;
+
   @IsIn(['male', 'female', 'other', 'unspecified'])
   @IsOptional()
   gender?: 'male' | 'female' | 'other' | 'unspecified';

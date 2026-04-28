@@ -3,6 +3,7 @@ export type MemberEngagementProfile = {
   profile: {
     userId: string
     fullName: string
+    studentId?: string | null
     email: string | null
     gender: string
     birthDate: string | null

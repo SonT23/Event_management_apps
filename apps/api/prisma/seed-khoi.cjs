@@ -9,10 +9,11 @@ const { PrismaClient } = require('@prisma/client');
 
 const BCRYPT_ROUNDS = 10;
 
-/** Các field không có trong DB (MSSV, nhóm G1, ban trống, lĩnh vực trống) — bỏ qua */
+/** Nội dung không có trong DB (nhóm G1, ô ban/lĩnh vực trống) — bỏ qua */
 const ACCOUNT = {
   email: 'hovudangkhoi.22042004@gmail.com',
   fullName: 'Hồ Vủ Đăng Khôi',
+  studentId: '2302700389',
   roleCode: 'PRESIDENT',
   deptCode: 'BAN_CHU_NHIEM',
   positionTitle: 'Chủ nhiệm',
@@ -47,6 +48,7 @@ async function main() {
         where: { user_id: existing.id },
         data: {
           full_name: ACCOUNT.fullName,
+          student_id: ACCOUNT.studentId,
           gender: ACCOUNT.gender,
           birth_date: ACCOUNT.birthDate,
           major: ACCOUNT.major,
@@ -87,6 +89,7 @@ async function main() {
           data: {
             user_id: user.id,
             full_name: ACCOUNT.fullName,
+            student_id: ACCOUNT.studentId,
             gender: ACCOUNT.gender,
             birth_date: ACCOUNT.birthDate,
             major: ACCOUNT.major,

@@ -816,6 +816,7 @@ export class AnalyticsService {
       profile: {
         userId: m.user_id.toString(),
         fullName: m.full_name,
+        studentId: m.student_id,
         email: m.users?.email ?? null,
         gender: m.gender,
         birthDate: m.birth_date,

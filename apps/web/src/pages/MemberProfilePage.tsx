@@ -233,6 +233,10 @@ export function MemberProfilePage() {
           <CardContent className="text-sm">
             <dl className="grid grid-cols-1 gap-x-4 gap-y-2 sm:grid-cols-2">
               <div>
+                <dt className="text-muted-foreground text-xs">MSSV</dt>
+                <dd className="font-medium">{p.studentId?.trim() || '—'}</dd>
+              </div>
+              <div>
                 <dt className="text-muted-foreground text-xs">Số điện thoại</dt>
                 <dd className="font-medium">{p.phone?.trim() || '—'}</dd>
               </div>

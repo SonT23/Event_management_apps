@@ -10,6 +10,8 @@ export type ClubRoleRow = {
 export type MemberProfile = {
   userId: string
   fullName: string
+  /** MSSV — có thể null */
+  studentId?: string | null
   gender: string | null
   birthDate: string | null
   major: string | null
