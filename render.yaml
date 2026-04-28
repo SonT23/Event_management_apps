@@ -1,0 +1,17 @@
+# Render Blueprint (tùy chọn): Dashboard → New → Blueprint → nối repo
+# Hoặc chỉnh tay Web Service giống các lệnh dưới.
+#
+# Bổ sung JWT_SECRET, DATABASE_URL, CORS_ORIGIN, COOKIE_* trong Render → Environment.
+
+services:
+  - type: web
+    name: media-club-api
+    runtime: node
+    region: singapore
+    plan: free
+    rootDir: .
+    buildCommand: npm install && npm run prisma:generate && npm run build:api
+    startCommand: cd apps/api && npm run start:render
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
