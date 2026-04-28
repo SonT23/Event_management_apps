@@ -1,0 +1,3 @@
+# Biến môi trường & Prisma generate tùy chỉnh — xem .gitignore ở root
+.env
+/generated/prisma

@@ -1,0 +1,526 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model absence_requests {
+  id                                       BigInt                  @id @default(autoincrement()) @db.UnsignedBigInt
+  event_id                                 BigInt                  @db.UnsignedBigInt
+  user_id                                  BigInt                  @db.UnsignedBigInt
+  reason                                   String                  @db.Text
+  status                                   absence_requests_status @default(pending)
+  decided_by                               BigInt?                 @db.UnsignedBigInt
+  decided_at                               DateTime?               @db.DateTime(6)
+  created_at                               DateTime                @default(now()) @db.Timestamp(6)
+  users_absence_requests_decided_byTousers users?                  @relation("absence_requests_decided_byTousers", fields: [decided_by], references: [id], onUpdate: NoAction, map: "fk_absence_dec")
+  events                                   events                  @relation(fields: [event_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_absence_event")
+  users_absence_requests_user_idTousers    users                   @relation("absence_requests_user_idTousers", fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_absence_user")
+
+  @@index([decided_by], map: "fk_absence_dec")
+  @@index([user_id], map: "fk_absence_user")
+  @@index([event_id, user_id], map: "ix_absence_event")
+}
+
+model departments {
+  id                Int               @id @default(autoincrement()) @db.UnsignedSmallInt
+  code              String            @unique(map: "ux_departments_code") @db.VarChar(64)
+  name              String            @db.VarChar(128)
+  parent_id         Int?              @db.UnsignedSmallInt
+  sort_order        Int               @default(0) @db.SmallInt
+  created_at        DateTime          @default(now()) @db.Timestamp(0)
+  departments       departments?      @relation("departmentsTodepartments", fields: [parent_id], references: [id], onUpdate: NoAction, map: "fk_departments_parent")
+  other_departments departments[]     @relation("departmentsTodepartments")
+  members           members[]
+  user_club_roles   user_club_roles[]
+
+  @@index([parent_id], map: "ix_departments_parent")
+}
+
+model event_checkins {
+  id                  BigInt              @id @default(autoincrement()) @db.UnsignedBigInt
+  event_id            BigInt              @db.UnsignedBigInt
+  registration_id     BigInt              @unique(map: "ux_checkin_reg") @db.UnsignedBigInt
+  scanned_by          BigInt              @db.UnsignedBigInt
+  scanned_at          DateTime            @db.DateTime(6)
+  note                String?             @db.VarChar(255)
+  users               users               @relation(fields: [scanned_by], references: [id], onUpdate: NoAction, map: "fk_checkin_by")
+  events              events              @relation(fields: [event_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_checkin_event")
+  event_registrations event_registrations @relation(fields: [registration_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_checkin_reg")
+
+  @@index([scanned_by], map: "fk_checkin_by")
+  @@index([event_id], map: "ix_checkin_event")
+}
+
+model event_managers {
+  id                                      BigInt   @id @default(autoincrement()) @db.UnsignedBigInt
+  event_id                                BigInt   @db.UnsignedBigInt
+  user_id                                 BigInt   @db.UnsignedBigInt
+  assigned_by                             BigInt   @db.UnsignedBigInt
+  assigned_at                             DateTime @default(now()) @db.Timestamp(0)
+  users_event_managers_assigned_byTousers users    @relation("event_managers_assigned_byTousers", fields: [assigned_by], references: [id], onUpdate: NoAction, map: "fk_event_managers_assigned")
+  events                                  events   @relation(fields: [event_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_event_managers_event")
+  users_event_managers_user_idTousers     users    @relation("event_managers_user_idTousers", fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_event_managers_user")
+
+  @@unique([event_id, user_id], map: "ux_event_manager")
+  @@index([assigned_by], map: "fk_event_managers_assigned")
+  @@index([user_id], map: "ix_event_managers_user")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model event_meetings {
+  id                  BigInt                      @id @default(autoincrement()) @db.UnsignedBigInt
+  event_id            BigInt                      @db.UnsignedBigInt
+  title               String                      @db.VarChar(200)
+  /// Lý do / nội dung trọng tâm buổi họp
+  reason              String?                     @db.Text
+  status              event_meetings_status       @default(scheduled)
+  cancelled_at        DateTime?                   @db.DateTime(6)
+  meeting_type        event_meetings_meeting_type @default(pre_event)
+  start_at            DateTime                    @db.DateTime(6)
+  /// Dự kiến kết thúc; nếu không kết sớm thì mốc này là thời điểm kết thúc chính thức
+  end_at              DateTime                    @db.DateTime(6)
+  /// Khi quản lý nhấn kết sớm; nếu null, kết thúc chính thức = end_at
+  actual_end_at       DateTime?                   @db.DateTime(6)
+  scan_open_at        DateTime?                   @db.DateTime(6)
+  scan_close_at       DateTime?                   @db.DateTime(6)
+  created_by          BigInt                      @db.UnsignedBigInt
+  created_at          DateTime                    @default(now()) @db.Timestamp(6)
+  users               users                       @relation(fields: [created_by], references: [id], onUpdate: NoAction, map: "fk_meet_by")
+  events              events                      @relation(fields: [event_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_meet_event")
+  meeting_attendances meeting_attendances[]
+  penalty_events      penalty_events[]
+
+  @@index([created_by], map: "fk_meet_by")
+  @@index([event_id, start_at], map: "ix_meet_event")
+  @@index([event_id, status], map: "ix_meet_event_status")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model event_registrations {
+  id                                          BigInt                     @id @default(autoincrement()) @db.UnsignedBigInt
+  event_id                                    BigInt                     @db.UnsignedBigInt
+  user_id                                     BigInt                     @db.UnsignedBigInt
+  status                                      event_registrations_status @default(pending)
+  qr_token_hash                               String                     @db.Char(64)
+  qr_issued_at                                DateTime?                  @db.Timestamp(6)
+  decided_by                                  BigInt?                    @db.UnsignedBigInt
+  decided_at                                  DateTime?                  @db.DateTime(6)
+  cancel_not_before                           DateTime?                  @db.DateTime(6)
+  created_at                                  DateTime                   @default(now()) @db.Timestamp(6)
+  updated_at                                  DateTime                   @default(now()) @db.Timestamp(6)
+  event_checkins                              event_checkins?
+  users_event_registrations_decided_byTousers users?                     @relation("event_registrations_decided_byTousers", fields: [decided_by], references: [id], onUpdate: NoAction, map: "fk_reg_decider")
+  events                                      events                     @relation(fields: [event_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_reg_event")
+  users_event_registrations_user_idTousers    users                      @relation("event_registrations_user_idTousers", fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_reg_user")
+  meeting_attendances                         meeting_attendances[]
+
+  @@unique([event_id, user_id], map: "ux_reg_event_user")
+  @@index([decided_by], map: "fk_reg_decider")
+  @@index([event_id], map: "ix_reg_event")
+  @@index([qr_token_hash], map: "ix_reg_qr")
+  @@index([user_id], map: "ix_reg_user")
+}
+
+model event_subcommittee_members {
+  id                                                  BigInt              @id @default(autoincrement()) @db.UnsignedBigInt
+  subcommittee_id                                     BigInt              @db.UnsignedBigInt
+  user_id                                             BigInt              @db.UnsignedBigInt
+  assigned_by                                         BigInt              @db.UnsignedBigInt
+  assigned_at                                         DateTime            @default(now()) @db.Timestamp(0)
+  users_event_subcommittee_members_assigned_byTousers users               @relation("event_subcommittee_members_assigned_byTousers", fields: [assigned_by], references: [id], onUpdate: NoAction, map: "fk_subc_mem_by")
+  event_subcommittees                                 event_subcommittees @relation(fields: [subcommittee_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_subc_mem_sub")
+  users_event_subcommittee_members_user_idTousers     users               @relation("event_subcommittee_members_user_idTousers", fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_subc_mem_user")
+
+  @@unique([subcommittee_id, user_id], map: "ux_subc_user")
+  @@index([assigned_by], map: "fk_subc_mem_by")
+  @@index([user_id], map: "ix_subc_mem_user")
+}
+
+model event_subcommittees {
+  id                         BigInt                       @id @default(autoincrement()) @db.UnsignedBigInt
+  event_id                   BigInt                       @db.UnsignedBigInt
+  name                       String                       @db.VarChar(160)
+  code                       String?                      @db.VarChar(64)
+  /// null = không giới hạn
+  max_members                Int?                         @db.UnsignedSmallInt
+  created_by                 BigInt                       @db.UnsignedBigInt
+  created_at                 DateTime                     @default(now()) @db.Timestamp(0)
+  event_subcommittee_members event_subcommittee_members[]
+  users                      users                        @relation(fields: [created_by], references: [id], onUpdate: NoAction, map: "fk_subc_by")
+  events                     events                       @relation(fields: [event_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_subc_event")
+
+  @@index([created_by], map: "fk_subc_by")
+  @@index([event_id], map: "ix_subc_event")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model events {
+  id                          BigInt                        @id @default(autoincrement()) @db.UnsignedBigInt
+  title                       String                        @db.VarChar(200)
+  description                 String?                       @db.Text
+  start_at                    DateTime                      @db.DateTime(6)
+  expected_end_at             DateTime?                     @db.DateTime(6)
+  actual_end_at               DateTime?                     @db.DateTime(6)
+  status                      events_status                 @default(draft)
+  requires_approval           Boolean                       @default(true)
+  default_cancel_minutes      Int?                          @db.UnsignedInt
+  created_by                  BigInt                        @db.UnsignedBigInt
+  created_at                  DateTime                      @default(now()) @db.Timestamp(6)
+  updated_at                  DateTime                      @default(now()) @db.Timestamp(6)
+  absence_requests            absence_requests[]
+  event_checkins              event_checkins[]
+  event_managers              event_managers[]
+  event_meetings              event_meetings[]
+  event_registrations         event_registrations[]
+  event_subcommittees         event_subcommittees[]
+  users                       users                         @relation(fields: [created_by], references: [id], onUpdate: NoAction, map: "fk_events_creator")
+  participation_cancellations participation_cancellations[]
+  penalty_events              penalty_events[]
+
+  @@index([created_by], map: "ix_events_creator")
+  @@index([start_at, expected_end_at, status], map: "ix_events_time")
+}
+
+model meeting_attendances {
+  id                  BigInt                     @id @default(autoincrement()) @db.UnsignedBigInt
+  meeting_id          BigInt                     @db.UnsignedBigInt
+  registration_id     BigInt                     @db.UnsignedBigInt
+  scanned_by          BigInt                     @db.UnsignedBigInt
+  scanned_at          DateTime                   @db.DateTime(6)
+  minutes_after_start Int?                       @db.SmallInt
+  result              meeting_attendances_result
+  users               users                      @relation(fields: [scanned_by], references: [id], onUpdate: NoAction, map: "fk_meetatt_by")
+  event_meetings      event_meetings             @relation(fields: [meeting_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_meetatt_meet")
+  event_registrations event_registrations        @relation(fields: [registration_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_meetatt_reg")
+
+  @@unique([meeting_id, registration_id], map: "ux_meetatt_reg")
+  @@index([scanned_by], map: "fk_meetatt_by")
+  @@index([registration_id], map: "fk_meetatt_reg")
+  @@index([meeting_id], map: "ix_meetatt_meet")
+}
+
+model member_warnings {
+  id                                        BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  to_user_id                                BigInt    @db.UnsignedBigInt
+  from_user_id                              BigInt    @db.UnsignedBigInt
+  title                                     String    @db.VarChar(200)
+  body                                      String?   @db.Text
+  is_ack                                    Boolean   @default(false)
+  email_sent_at                             DateTime? @db.DateTime(6)
+  created_at                                DateTime  @default(now()) @db.Timestamp(6)
+  users_member_warnings_from_user_idTousers users     @relation("member_warnings_from_user_idTousers", fields: [from_user_id], references: [id], onUpdate: NoAction, map: "fk_warn_from")
+  users_member_warnings_to_user_idTousers   users     @relation("member_warnings_to_user_idTousers", fields: [to_user_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_warn_to")
+
+  @@index([from_user_id], map: "ix_warn_from")
+  @@index([to_user_id, created_at], map: "ix_warn_to")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model members {
+  user_id               BigInt                    @id @db.UnsignedBigInt
+  full_name             String                    @db.VarChar(160)
+  gender                members_gender            @default(unspecified)
+  birth_date            DateTime?                 @db.Date
+  major                 String?                   @db.VarChar(180)
+  primary_department_id Int?                      @db.UnsignedSmallInt
+  position_title        String?                   @db.VarChar(128)
+  phone                 String?                   @db.VarChar(32)
+  membership_status     members_membership_status @default(active)
+  inactive_at           DateTime?                 @db.DateTime(6)
+  inactive_reason       String?                   @db.VarChar(500)
+  created_at            DateTime                  @default(now()) @db.Timestamp(0)
+  updated_at            DateTime                  @default(now()) @db.Timestamp(0)
+  departments           departments?              @relation(fields: [primary_department_id], references: [id], onUpdate: NoAction, map: "fk_members_dept")
+  users                 users                     @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_members_user")
+
+  @@index([primary_department_id], map: "ix_members_dept")
+  @@index([full_name], map: "ix_members_name")
+  @@index([membership_status], map: "ix_members_status")
+}
+
+model participation_cancellations {
+  id                                                  BigInt                             @id @default(autoincrement()) @db.UnsignedBigInt
+  event_id                                            BigInt                             @db.UnsignedBigInt
+  user_id                                             BigInt                             @db.UnsignedBigInt
+  reason                                              String?                            @db.Text
+  status                                              participation_cancellations_status @default(pending)
+  decided_by                                          BigInt?                            @db.UnsignedBigInt
+  decided_at                                          DateTime?                          @db.DateTime(6)
+  created_at                                          DateTime                           @default(now()) @db.Timestamp(6)
+  users_participation_cancellations_decided_byTousers users?                             @relation("participation_cancellations_decided_byTousers", fields: [decided_by], references: [id], onUpdate: NoAction, map: "fk_pcancel_dec")
+  events                                              events                             @relation(fields: [event_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_pcancel_event")
+  users_participation_cancellations_user_idTousers    users                              @relation("participation_cancellations_user_idTousers", fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_pcancel_user")
+
+  @@index([decided_by], map: "fk_pcancel_dec")
+  @@index([user_id], map: "fk_pcancel_user")
+  @@index([event_id, user_id], map: "ix_pcancel_event")
+}
+
+model penalty_events {
+  id                                      BigInt          @id @default(autoincrement()) @db.UnsignedBigInt
+  user_id                                 BigInt          @db.UnsignedBigInt
+  event_id                                BigInt?         @db.UnsignedBigInt
+  meeting_id                              BigInt?         @db.UnsignedBigInt
+  rule_id                                 Int?            @db.UnsignedSmallInt
+  points                                  Decimal         @db.Decimal(5, 2)
+  reason                                  String?         @db.VarChar(500)
+  recorded_by                             BigInt          @db.UnsignedBigInt
+  created_at                              DateTime        @default(now()) @db.Timestamp(6)
+  users_penalty_events_recorded_byTousers users           @relation("penalty_events_recorded_byTousers", fields: [recorded_by], references: [id], onUpdate: NoAction, map: "fk_pen_by")
+  events                                  events?         @relation(fields: [event_id], references: [id], onUpdate: NoAction, map: "fk_pen_evn")
+  event_meetings                          event_meetings? @relation(fields: [meeting_id], references: [id], onUpdate: NoAction, map: "fk_pen_meet")
+  penalty_rules                           penalty_rules?  @relation(fields: [rule_id], references: [id], onUpdate: NoAction, map: "fk_pen_rule")
+  users_penalty_events_user_idTousers     users           @relation("penalty_events_user_idTousers", fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_pen_user")
+
+  @@index([recorded_by], map: "fk_pen_by")
+  @@index([meeting_id], map: "fk_pen_meet")
+  @@index([rule_id], map: "fk_pen_rule")
+  @@index([created_at], map: "ix_pen_created")
+  @@index([event_id], map: "ix_pen_event")
+  @@index([user_id, created_at], map: "ix_pen_user")
+}
+
+model penalty_rules {
+  id             Int              @id @default(autoincrement()) @db.UnsignedSmallInt
+  code           String           @unique(map: "ux_penrule_code") @db.VarChar(64)
+  label          String           @db.VarChar(128)
+  default_points Decimal          @default(0.00) @db.Decimal(5, 2)
+  is_active      Boolean          @default(true)
+  penalty_events penalty_events[]
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model roles {
+  id              Int               @id @default(autoincrement()) @db.UnsignedSmallInt
+  code            String            @unique(map: "ux_roles_code") @db.VarChar(64)
+  name            String            @db.VarChar(128)
+  description     String?           @db.VarChar(255)
+  hierarchy_level Int               @default(0) @db.UnsignedTinyInt
+  created_at      DateTime          @default(now()) @db.Timestamp(0)
+  user_club_roles user_club_roles[]
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model user_club_roles {
+  id            BigInt       @id @default(autoincrement()) @db.UnsignedBigInt
+  user_id       BigInt       @db.UnsignedBigInt
+  role_id       Int          @db.UnsignedSmallInt
+  department_id Int?         @db.UnsignedSmallInt
+  is_primary    Boolean      @default(false)
+  created_at    DateTime     @default(now()) @db.Timestamp(0)
+  departments   departments? @relation(fields: [department_id], references: [id], onUpdate: NoAction, map: "fk_user_club_roles_dept")
+  roles         roles        @relation(fields: [role_id], references: [id], onUpdate: NoAction, map: "fk_user_club_roles_role")
+  users         users        @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_user_club_roles_user")
+
+  @@unique([user_id, role_id, department_id], map: "ux_user_club_role_dept")
+  @@index([department_id], map: "ix_user_club_roles_dept")
+  @@index([role_id], map: "ix_user_club_roles_role")
+  @@index([user_id], map: "ix_user_club_roles_user")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model users {
+  id                                                                        BigInt                        @id @default(autoincrement()) @db.UnsignedBigInt
+  email                                                                     String                        @unique(map: "ux_users_email") @db.VarChar(255)
+  password_hash                                                             String                        @db.VarChar(255)
+  is_active                                                                 Boolean                       @default(true)
+  last_login_at                                                             DateTime?                     @db.DateTime(6)
+  created_at                                                                DateTime                      @default(now()) @db.Timestamp(0)
+  updated_at                                                                DateTime                      @default(now()) @db.Timestamp(0)
+  absence_requests_absence_requests_decided_byTousers                       absence_requests[]            @relation("absence_requests_decided_byTousers")
+  absence_requests_absence_requests_user_idTousers                          absence_requests[]            @relation("absence_requests_user_idTousers")
+  event_checkins                                                            event_checkins[]
+  event_managers_event_managers_assigned_byTousers                          event_managers[]              @relation("event_managers_assigned_byTousers")
+  event_managers_event_managers_user_idTousers                              event_managers[]              @relation("event_managers_user_idTousers")
+  event_meetings                                                            event_meetings[]
+  event_registrations_event_registrations_decided_byTousers                 event_registrations[]         @relation("event_registrations_decided_byTousers")
+  event_registrations_event_registrations_user_idTousers                    event_registrations[]         @relation("event_registrations_user_idTousers")
+  event_subcommittee_members_event_subcommittee_members_assigned_byTousers  event_subcommittee_members[]  @relation("event_subcommittee_members_assigned_byTousers")
+  event_subcommittee_members_event_subcommittee_members_user_idTousers      event_subcommittee_members[]  @relation("event_subcommittee_members_user_idTousers")
+  event_subcommittees                                                       event_subcommittees[]
+  events                                                                    events[]
+  meeting_attendances                                                       meeting_attendances[]
+  member_warnings_member_warnings_from_user_idTousers                       member_warnings[]             @relation("member_warnings_from_user_idTousers")
+  member_warnings_member_warnings_to_user_idTousers                         member_warnings[]             @relation("member_warnings_to_user_idTousers")
+  members                                                                   members?
+  participation_cancellations_participation_cancellations_decided_byTousers participation_cancellations[] @relation("participation_cancellations_decided_byTousers")
+  participation_cancellations_participation_cancellations_user_idTousers    participation_cancellations[] @relation("participation_cancellations_user_idTousers")
+  penalty_events_penalty_events_recorded_byTousers                          penalty_events[]              @relation("penalty_events_recorded_byTousers")
+  penalty_events_penalty_events_user_idTousers                              penalty_events[]              @relation("penalty_events_user_idTousers")
+  refresh_tokens                                                            refresh_tokens[]
+  user_club_roles                                                           user_club_roles[]
+  club_meetings_created                                                     club_meetings[]                 @relation("club_meetings_created")
+  club_meeting_invitees                                                    club_meeting_invitees[]         @relation("club_meeting_invited_users")
+  club_meeting_absence_user                                                 club_meeting_absence_requests[]  @relation("cm_absence_user")
+  club_meeting_absence_decider                                              club_meeting_absence_requests[]  @relation("cm_absence_dec")
+  user_notifications                                                        user_notifications[]
+}
+
+/// Thông báo trong app (ví dụ: đăng ký sự kiện bị từ chối), đọc khi đăng nhập / GET /auth/me
+model user_notifications {
+  id         BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  user_id    BigInt    @db.UnsignedBigInt
+  kind       String    @db.VarChar(32)
+  title      String    @db.VarChar(200)
+  body       String    @db.Text
+  read_at    DateTime? @db.DateTime(6)
+  created_at DateTime  @default(now()) @db.Timestamp(6)
+  users      users     @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_un_user")
+
+  @@index([user_id, read_at], map: "ix_un_user_read")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model refresh_tokens {
+  id                   BigInt           @id @default(autoincrement()) @db.UnsignedBigInt
+  user_id              BigInt           @db.UnsignedBigInt
+  token_hash           String           @unique(map: "ux_refresh_token_hash") @db.Char(64)
+  family_id            String?          @db.Char(36)
+  expires_at           DateTime
+  revoked_at           DateTime?
+  replaced_by_id       BigInt?          @db.UnsignedBigInt
+  user_agent           String?          @db.VarChar(500)
+  ip                   String?          @db.VarChar(45)
+  created_at           DateTime         @default(now())
+  refresh_tokens       refresh_tokens?  @relation("refresh_tokensTorefresh_tokens", fields: [replaced_by_id], references: [id], onUpdate: NoAction, map: "fk_refresh_replaced")
+  other_refresh_tokens refresh_tokens[] @relation("refresh_tokensTorefresh_tokens")
+  users                users            @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_refresh_user")
+
+  @@index([replaced_by_id], map: "fk_refresh_replaced")
+  @@index([expires_at], map: "ix_refresh_expires")
+  @@index([user_id], map: "ix_refresh_user")
+}
+
+enum members_gender {
+  male
+  female
+  other
+  unspecified
+}
+
+enum event_meetings_meeting_type {
+  pre_event
+  in_event
+}
+
+enum event_meetings_status {
+  scheduled
+  cancelled
+}
+
+enum event_registrations_status {
+  pending
+  approved
+  rejected
+  cancelled
+}
+
+enum absence_requests_status {
+  pending
+  approved
+  rejected
+}
+
+enum participation_cancellations_status {
+  pending
+  approved
+  rejected
+}
+
+enum events_status {
+  draft
+  published
+  ongoing
+  ended
+  cancelled
+}
+
+enum meeting_attendances_result {
+  on_time
+  late
+  out_of_window
+}
+
+enum members_membership_status {
+  active
+  inactive
+}
+
+/// Cuộc họp nội bộ CLB (không gắn sự kiện): định kỳ, cuối năm, v.v.
+enum club_meeting_kind {
+  quarterly
+  year_end
+  board
+  general
+  other
+  emergency
+}
+
+enum club_meeting_mandatory_scope {
+  all_members
+  club_leadership
+  dept_heads_only
+  selected_members
+}
+
+enum club_meeting_status {
+  scheduled
+  cancelled
+}
+
+model club_meetings {
+  id                BigInt                       @id @default(autoincrement()) @db.UnsignedBigInt
+  title             String                       @db.VarChar(200)
+  detail            String?                      @db.Text
+  kind              club_meeting_kind            @default(general)
+  mandatory_scope   club_meeting_mandatory_scope @default(all_members)
+  start_at          DateTime                     @db.DateTime(6)
+  end_at            DateTime                     @db.DateTime(6)
+  status            club_meeting_status         @default(scheduled)
+  cancelled_at      DateTime?                    @db.DateTime(6)
+  created_by        BigInt                      @db.UnsignedBigInt
+  created_at        DateTime                    @default(now()) @db.Timestamp(6)
+  updated_at        DateTime                    @default(now()) @updatedAt @db.Timestamp(6)
+  users              users                       @relation("club_meetings_created", fields: [created_by], references: [id], onUpdate: NoAction, map: "fk_club_meet_by")
+  absence_requests  club_meeting_absence_requests[]
+  invitees          club_meeting_invitees[]
+
+  @@index([created_by], map: "fk_club_meet_by")
+  @@index([start_at], map: "ix_club_meet_start")
+  @@index([status], map: "ix_club_meet_status")
+}
+
+/// Hội viên được mời khi phạm vi = selected_members
+model club_meeting_invitees {
+  club_meeting_id BigInt        @db.UnsignedBigInt
+  user_id         BigInt        @db.UnsignedBigInt
+  club_meetings   club_meetings @relation(fields: [club_meeting_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_cmi_meet")
+  users           users         @relation("club_meeting_invited_users", fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_cmi_user")
+
+  @@id([club_meeting_id, user_id])
+  @@index([user_id], map: "ix_cmi_user")
+}
+
+model club_meeting_absence_requests {
+  id                 BigInt                @id @default(autoincrement()) @db.UnsignedBigInt
+  club_meeting_id    BigInt                @db.UnsignedBigInt
+  user_id            BigInt                @db.UnsignedBigInt
+  reason             String                @db.Text
+  status             absence_requests_status @default(pending)
+  decided_by         BigInt?               @db.UnsignedBigInt
+  decided_at         DateTime?             @db.DateTime(6)
+  created_at         DateTime              @default(now()) @db.Timestamp(6)
+  club_meetings      club_meetings         @relation(fields: [club_meeting_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_cmar_meet")
+  users              users                 @relation("cm_absence_user", fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_cmar_user")
+  decider            users?                @relation("cm_absence_dec", fields: [decided_by], references: [id], onUpdate: NoAction, map: "fk_cmar_dec")
+
+  @@unique([club_meeting_id, user_id], map: "ux_cmar_meet_user")
+  @@index([user_id], map: "ix_cmar_user")
+  @@index([decided_by], map: "fk_cmar_dec")
+}

@@ -1,0 +1,6 @@
+# Chi tiết IDE/log thêm — xem .gitignore ở root monorepo
+logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+vite.config.ts.timestamp*
