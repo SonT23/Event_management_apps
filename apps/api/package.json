@@ -23,7 +23,8 @@
     "prisma:migrate:dev": "prisma migrate dev",
     "prisma:migrate:deploy": "prisma migrate deploy",
     "prisma:studio": "prisma studio",
-    "db:wipe-demo": "node prisma/wipe-and-reseed.cjs"
+    "db:wipe-demo": "node prisma/wipe-and-reseed.cjs",
+    "seed:khoi": "node prisma/seed-khoi.cjs"
   },
   "dependencies": {
     "@nestjs/common": "^10.0.0",
