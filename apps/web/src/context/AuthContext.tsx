@@ -56,21 +56,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [refresh])
 
   const login = useCallback(async (email: string, password: string) => {
-    await apiJson<{ user: AuthUser }>('/auth/login', {
+    const data = await apiJson<{ user?: AuthUser }>('/auth/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, password }),
     })
+    /** Dùng user từ body ngay — tránh race setState/async refresh khiến ProtectedAppLayout thấy user=null và đá về /login */
+    if (data?.user) {
+      setUser(data.user)
+      return
+    }
     await refresh()
   }, [refresh])
 
   const register = useCallback(
     async (body: Record<string, unknown>) => {
-      await apiJson<{ user: AuthUser }>('/auth/register', {
+      const data = await apiJson<{ user?: AuthUser }>('/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
       })
+      if (data?.user) {
+        setUser(data.user)
+        return
+      }
       await refresh()
     },
     [refresh],
