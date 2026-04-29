@@ -7,6 +7,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import { Request, Response } from 'express';
+import { sendPrismaExceptionResponse } from './prisma-exception.filter';
 
 /**
  * Bắt mọi ngoại lệ chưa xử lý: trả JSON thống nhất, không lộ stack ra client.
@@ -21,6 +22,10 @@ export class AllExceptionsFilter implements ExceptionFilter {
     const req = ctx.getRequest<Request>();
 
     const isProd = process.env.NODE_ENV === 'production';
+
+    if (sendPrismaExceptionResponse(exception, req, res)) {
+      return;
+    }
 
     if (exception instanceof HttpException) {
       const status = exception.getStatus();

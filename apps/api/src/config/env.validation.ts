@@ -24,4 +24,13 @@ export function validateEnvOrThrow(): void {
       '[env] JWT_SECRET is required and must be at least 16 characters (use a long random string).',
     );
   }
+
+  /** Tránh lỗi “chỉ vài trang lỗi trên prod”: CORS mặc định chỉ localhost nên trình duyệt chặn gọi API từ web thật. */
+  const cors = process.env.CORS_ORIGIN?.trim();
+  if (process.env.NODE_ENV === 'production' && !cors) {
+    throw new Error(
+      '[env] CORS_ORIGIN is required in production (comma-separated frontend origins). ' +
+        'Also set COOKIE_SAMESITE=none and COOKIE_SECURE=true when the web app and API are on different hosts.',
+    );
+  }
 }

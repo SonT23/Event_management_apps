@@ -3,7 +3,6 @@ import { NestFactory } from '@nestjs/core';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import * as cookieParser from 'cookie-parser';
 import { AllExceptionsFilter } from './common/filters/http-exception.filter';
-import { PrismaExceptionFilter } from './common/filters/prisma-exception.filter';
 import { validateEnvOrThrow } from './config/env.validation';
 import { AppModule } from './app.module';
 
@@ -34,7 +33,7 @@ async function bootstrap() {
       transform: true,
     }),
   );
-  app.useGlobalFilters(new PrismaExceptionFilter(), new AllExceptionsFilter());
+  app.useGlobalFilters(new AllExceptionsFilter());
   app.enableShutdownHooks();
   // PORT rỗng / sai → '' | NaN; `??` không thay chuỗi rỗng → gây ERR_SOCKET_BAD_PORT trên PaaS (Render)
   const port = Number.parseInt(String(process.env.PORT || '3000'), 10);
