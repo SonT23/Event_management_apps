@@ -25,6 +25,7 @@
     "prisma:migrate:deploy": "prisma migrate deploy",
     "prisma:studio": "prisma studio",
     "db:wipe-demo": "node prisma/wipe-and-reseed.cjs",
+    "db:wipe-but-khoi": "node prisma/wipe-but-khoi.cjs",
     "seed:khoi": "node prisma/seed-khoi.cjs"
   },
   "dependencies": {

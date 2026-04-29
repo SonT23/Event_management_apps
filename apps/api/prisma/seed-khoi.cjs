@@ -12,7 +12,7 @@ const BCRYPT_ROUNDS = 10;
 /** Nội dung không có trong DB (nhóm G1, ô ban/lĩnh vực trống) — bỏ qua */
 const ACCOUNT = {
   email: 'hovudangkhoi.22042004@gmail.com',
-  fullName: 'Hồ Vủ Đăng Khôi',
+  fullName: 'Hồ Vũ Đăng Khôi',
   studentId: '2302700389',
   roleCode: 'PRESIDENT',
   deptCode: 'BAN_CHU_NHIEM',
