@@ -1,4 +1,11 @@
-import { useCallback, useEffect, useMemo, useState, type ComponentType } from 'react'
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ComponentType,
+} from 'react'
 import { Link } from 'react-router-dom'
 import {
   IconCalendarEvent,
@@ -115,39 +122,44 @@ export function DashboardPage() {
     )
   }, [summary])
 
+  const loadDashboardId = useRef(0)
+
   useEffect(() => {
-    let ok = true
+    const reqId = ++loadDashboardId.current
     ;(async () => {
+      setLoading(true)
       setErr(null)
+      if (lead) {
+        setSummary(null)
+      } else {
+        setMine(null)
+      }
       try {
         if (lead) {
           const s = await apiJson<OrgSummary>(
             `/org/summary?year=${summaryQuarter.y}&quarter=${summaryQuarter.q}`,
           )
-          if (!ok) {
+          if (reqId !== loadDashboardId.current) {
             return
           }
           setSummary(s)
         } else {
           const list = await apiJson<MyRegistration[]>('/registrations/me')
-          if (!ok) {
+          if (reqId !== loadDashboardId.current) {
             return
           }
           setMine(list)
         }
       } catch (e) {
-        if (ok) {
+        if (reqId === loadDashboardId.current) {
           setErr(formatApiError(e))
         }
       } finally {
-        if (ok) {
+        if (reqId === loadDashboardId.current) {
           setLoading(false)
         }
       }
     })()
-    return () => {
-      ok = false
-    }
   }, [lead, summaryQuarter.y, summaryQuarter.q])
 
   if (loading) {
@@ -171,6 +183,23 @@ export function DashboardPage() {
     return (
       <div className="text-destructive p-4 text-sm md:px-6" role="alert">
         {err}
+      </div>
+    )
+  }
+
+  /** BCH nhưng chưa có payload (race hiếm hoặc phản hồi không hợp lệ): tránh nhầm sang chế độ cá nhân */
+  if (lead && !summary) {
+    return (
+      <div className="text-muted-foreground px-4 py-6 text-sm md:px-6">
+        Chưa tải được báo cáo tổng quan. Hãy{' '}
+        <button
+          type="button"
+          className="text-primary underline"
+          onClick={() => window.location.reload()}
+        >
+          tải lại trang
+        </button>{' '}
+        hoặc kiểm tra kết nối tới máy chủ.
       </div>
     )
   }
