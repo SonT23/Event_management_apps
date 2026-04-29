@@ -27,7 +27,7 @@ CREATE TABLE IF NOT EXISTS `club_meetings` (
   KEY `fk_club_meet_by` (`created_by`),
   KEY `ix_club_meet_start` (`start_at`),
   KEY `ix_club_meet_status` (`status`),
-  CONSTRAINT `fk_club_meet_by` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`) ON UPDATE NO ACTION
+  CONSTRAINT `fk_club_meet_by` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`) ON DELETE RESTRICT ON UPDATE NO ACTION
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `club_meeting_invitees` (

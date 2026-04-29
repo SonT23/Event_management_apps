@@ -489,7 +489,7 @@ model club_meetings {
   created_by        BigInt                      @db.UnsignedBigInt
   created_at        DateTime                    @default(now()) @db.Timestamp(6)
   updated_at        DateTime                    @default(now()) @updatedAt @db.Timestamp(6)
-  users              users                       @relation("club_meetings_created", fields: [created_by], references: [id], onUpdate: NoAction, map: "fk_club_meet_by")
+  users              users                       @relation("club_meetings_created", fields: [created_by], references: [id], onDelete: Restrict, onUpdate: NoAction, map: "fk_club_meet_by")
   absence_requests  club_meeting_absence_requests[]
   invitees          club_meeting_invitees[]
 
