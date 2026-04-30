@@ -22,3 +22,14 @@
 | `npm run db:wipe-demo` | **Xóa sạch** dữ liệu nghiệp vụ trong DB, nạp lại ban/vai trò/quy tắc + 10 tài khoản demo (dùng khi cần reset) |
 
 Tài liệu framework: [NestJS](https://docs.nestjs.com).
+
+### Deploy Render + MySQL trên Aiven
+
+Lệnh khởi động production dùng `prisma migrate deploy` rồi `node dist/main`. Nếu log báo **`P1001: Can't reach database server at …aivencloud.com:…`** thì **TCP từ Render tới cổng MySQL không mở được** — không phải bug Nest.
+
+1. **Aiven:** Mở [Aiven Console](https://console.aiven.io/) → MySQL của dự án → mục **Networking / Trusted sources** (hoặc tương đương). Thêm **`0.0.0.0/0`** (chỉ nên demo) hoặc bật cho phép kết nối từ **Internet**. Gói free của Render không có egress IP cố định, nên gần như bắt buộc mở theo một trong hai kiểu trên (production nghiêm túc nên dùng VPC / IP tĩnh trả phí).
+2. **DATABASE_URL trên Render (Environment của `media-club-api`):** dán **Service URI** từ Aiven **Overview**, giữ **`?ssl-mode=REQUIRED`**, URL-encode mật khẩu nếu chứa ký tự đặc biệt (`@` → `%40`).
+3. **Dịch vụ MySQL đang chạy** (không paused / không xóa instance).
+4. Sau khi sửa, **Manual Deploy → Clear build cache / redeploy** trên Render nếu cần.
+
+Thử cục bộ (máy bạn có `DATABASE_URL` giống Render): trong `apps/api` chạy `npx prisma migrate deploy`; nếu local OK nhưng Render fail thì gần như chắc là firewall Aiven.

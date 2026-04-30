@@ -1,5 +1,14 @@
 # Render Blueprint: Dashboard → New → Blueprint → nối repo (hoặc chỉnh tay từng service).
 #
+# --- API + Aiven MySQL (lỗi Prisma P1001 "Can't reach database server") -----------------
+# Nguyên nhân thường gặp: Aiven chặn kết nối từ IP lạ — Render không nằm trong allowlist.
+# Cách xử:
+# - Aiven Dashboard → Service MySQL của bạn → Users / Connections / Trusted sources:
+#   thêm nguồn "Internet" hoặc 0.0.0.0/0 (chỉ dev/demo) hoặc IP egress cố định (gói trả phí).
+# - Kiểm tra DATABASE_URL trong Render (Environment): dùng Service URI từ Aiven Overview,
+#   có ?ssl-mode=REQUIRED và mật khẩu đã URL-encode nếu cần.
+# - Kiểm tra dịch vụ DB trên Aiven đang Running (trial hết có thể tạm ngắt).
+#
 # API: bổ sung JWT_SECRET, DATABASE_URL — bắt buộc: CORS_ORIGIN (full URL của static site).
 # Khác subdomain với frontend: COOKIE_SECURE=true và COOKIE_SAMESITE=none (không chỉ các trang
 # báo lỗi mà không đăng nhập được đúng trên các route cần cookie).
